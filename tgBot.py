@@ -1,40 +1,58 @@
 import asyncio
+import json
 from aiogram import Bot, Dispatcher, F
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+import os
+
+script_dir = os.path.dirname(os.path.abspath(__file__))  # Папка с tgBot.py
+receipts_path = os.path.join(script_dir, "receipts.json")
+
+with open(receipts_path, "r", encoding="utf-8") as f:
+    recipes = json.load(f)
 
 bot = Bot("8261198757:AAH6zT0tMVsfrud1Wq09sZ2x851jBt7tnqQ")
 dp = Dispatcher()
 
+
+def GetKeyboard():
+    keyboard = ReplyKeyboardMarkup(keyboard=
+        [
+            [KeyboardButton(text = "чай"), KeyboardButton(text = "суп"),
+             KeyboardButton(text = "тушенка совок"), KeyboardButton(text = "лазанья"),
+             KeyboardButton(text = "компот")
+             ]
+            ])
+    resize_keyboard = True
+    one_time_keyboard = True
+    return keyboard
+
 class States(StatesGroup):
-    name = State()
-    choosingDish = State()
+    nameState = State()
+    choosingDishState = State()
     
 @dp.message(F.text == "/start")
-async def FirstAnswer(msg, state:FSMContext):
-    await msg.answer("Назовите имя")
-    await state.set_state(States.name)
+async def FirstAnswer(msg, state: FSMContext):
+    await msg.answer("назовите ваше имя")
+    await state.set_state(States.nameState)
 
-@dp.message(States.name)
+@dp.message(States.nameState)
 async def FirstMsg(msg, state: FSMContext):
-    await msg.answer("Выберите рецепт продукта, " + msg.text)
-    await state.update_data(name = msg.text)
-    await state.set_state(States.choosingDish)
+    await msg.answer("Выберите рецепт продукта, " + msg.text, reply_markup=GetKeyboard())
+    await state.update_data(name=msg.text)
+    await state.set_state(States.choosingDishState)
 
-@dp.message(States.choosingDish)
-async def Receipts(receipt, state: FSMContext):
-    dish = receipt.text
-    if (dish == "чай"):
-        await receipt.answer("кинуть пакетик в кружку")
-    if (dish == "суп"):
-        await receipt.answer("вода картошка кобаса морковь")
+@dp.message(States.choosingDishState) 
+async def Receipts(msg, state: FSMContext):
+    dish = msg.text
+    if (dish in recipes):
+        await msg.answer(recipes[dish])
+        await msg.answer("вам понравилось?")
     else:
-        await receipt.answer("введите суп или чай")
+        await msg.answer("выберите то, что на кнопках")
+    
 
-    
-    
-    
-    
-    
+
 
 asyncio.run(dp.start_polling(bot))
