@@ -14,7 +14,7 @@ with open(receipts_path, "r", encoding="utf-8") as f:
 
 bot = Bot("8261198757:AAH6zT0tMVsfrud1Wq09sZ2x851jBt7tnqQ")
 dp = Dispatcher()
-
+name = ""
 
 def GetKeyboard():
     keyboard = ReplyKeyboardMarkup(keyboard=
@@ -31,7 +31,7 @@ def GetKeyboard():
 class States(StatesGroup):
     nameState = State()
     choosingDishState = State()
-    
+  
 @dp.message(F.text == "/start")
 async def FirstAnswer(msg, state: FSMContext):
     await msg.answer("назовите ваше имя")
@@ -40,7 +40,7 @@ async def FirstAnswer(msg, state: FSMContext):
 @dp.message(States.nameState)
 async def FirstMsg(msg, state: FSMContext):
     await msg.answer("Выберите рецепт продукта, " + msg.text, reply_markup=GetKeyboard())
-    await state.update_data(name=msg.text)
+    name=msg.text
     await state.set_state(States.choosingDishState)
 
 @dp.message(States.choosingDishState) 
@@ -48,7 +48,7 @@ async def Receipts(msg, state: FSMContext):
     dish = msg.text
     if (dish in recipes):
         await msg.answer(recipes[dish])
-        await msg.answer("вам понравилось?")
+        await msg.answer("вам понравилось?" + name)
     else:
         await msg.answer("выберите то, что на кнопках")
     
