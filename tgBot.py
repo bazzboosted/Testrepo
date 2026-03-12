@@ -10,7 +10,7 @@ import sqlite3
 import os
 
 
-script_dir    = os.path.dirname(os.path.abspath(__file__))
+script_dir = os.path.dirname(os.path.abspath(__file__))
 receipts_path = os.path.join(script_dir, "receipts.json")
 
 with open(receipts_path, "r", encoding="utf-8") as f:
@@ -67,7 +67,7 @@ async def FirstMsg(msg, state: FSMContext):
     await msg.answer("Выберите рецепт продукта, " + msg.text, reply_markup=GetKeyboard())
     name = msg.text
     cursor.execute(
-        "INSERT OR IGNORE INTO users (tgId, name) values (?, ?)",
+        "insert or ignore INTO users (tgId, name) values (?, ?)",
         (msg.from_user.id, name)
     )
     conn.commit()
