@@ -15,6 +15,7 @@ load_dotenv()
 script_dir = os.path.dirname(os.path.abspath(__file__))
 receipts_path = os.path.join(script_dir, "receipts.json")
 dbPath = os.path.join(script_dir, "botDatabase")
+
 with open(receipts_path, "r", encoding="utf-8") as f:
     recipes = json.load(f)
 
@@ -30,19 +31,42 @@ for row in rows:
 token = os.getenv("BOT_TOKEN")
 bot = Bot(token)
 dp = Dispatcher()
-name = ""
 
+def InitDb():
+    cursor.executescript("""
+        CREATE TABLE IF NOT EXISTS "users" (
+            tgId INTEGER NOT NULL,
+            name TEXT,
+            CONSTRAINT User_PK PRIMARY KEY (tgId)
+        );
+
+        CREATE TABLE IF NOT EXISTS dishes (
+            name TEXT NOT NULL,
+            category TEXT,
+            description TEXT,
+            time TEXT,
+            CONSTRAINT dishes_pk PRIMARY KEY (name)
+        );
+
+        CREATE TABLE IF NOT EXISTS favorites (
+            tgId INTEGER,
+            dish TEXT,
+            CONSTRAINT favorites_dishes_FK FOREIGN KEY (dish) REFERENCES dishes(name) ON DELETE SET NULL,
+            CONSTRAINT favorites_User_FK FOREIGN KEY (tgId) REFERENCES "users"(tgId) ON DELETE SET NULL
+        );
+    """)
+    conn.commit() //'это взято из dbeaver полностью'
+    
+    
 def GetKeyboard():
-    keyboard = ReplyKeyboardMarkup(keyboard=
-        [
-            [KeyboardButton(text = "чай"), KeyboardButton(text = "суп"),
-             KeyboardButton(text = "тушенка совок"), KeyboardButton(text = "лазанья"),
-             KeyboardButton(text = "компот"),
-             KeyboardButton(text = "Избранное")
-             ]
-            ])
-    resize_keyboard = True
-    one_time_keyboard = True
+    cursor.execute("select name from dishes")
+    rows = cursor.fetchall()
+    buts = [KeyboardButton(text=row[0]) for row in rows]
+    keyboard = ReplyKeyboardMarkup(
+        keyboard=[buts, [KeyboardButton(text="Избранное")]],
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
     return keyboard
 
 class States(StatesGroup):
@@ -52,6 +76,7 @@ class States(StatesGroup):
   
 @dp.message(F.text == "/start")
 async def FirstAnswer(msg, state: FSMContext):
+    InitDb()
     await msg.answer("назовите ваше имя")
     await state.set_state(States.nameState)
 
