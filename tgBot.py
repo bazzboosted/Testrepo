@@ -7,16 +7,19 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 import sqlite3
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 receipts_path = os.path.join(script_dir, "receipts.json")
-
+dbPath = os.path.join(script_dir, "botDatabase")
 with open(receipts_path, "r", encoding="utf-8") as f:
     recipes = json.load(f)
 
-path = r"C:\Git\Project\botDatabase"
-conn = sqlite3.connect(path)
+
+conn = sqlite3.connect(dbPath)
 cursor = conn.cursor()
 
 cursor.execute("select * from dishes")
@@ -24,7 +27,8 @@ rows = cursor.fetchall()
 for row in rows:
     print(row)
 
-bot = Bot("8261198757:AAH6zT0tMVsfrud1Wq09sZ2x851jBt7tnqQ")
+token = os.getenv("BOT_TOKEN")
+bot = Bot(token)
 dp = Dispatcher()
 name = ""
 
