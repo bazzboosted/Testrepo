@@ -70,15 +70,15 @@ def GetKeyboard():
     return keyboard
 
 class States(StatesGroup):
-    nameState = State()
-    choosingDishState = State()
-    afterChoosingState = State()
+    WaitForName = State()
+    ChoosingDish = State()
+    AfterChoosingDish = State()
   
 @dp.message(F.text == "/start")
 async def FirstAnswer(msg, state: FSMContext):
     InitDb()
     await msg.answer("назовите ваше имя")
-    await state.set_state(States.nameState)
+    await state.set_state(States.WaitForName)
 
 @dp.message(F.text == "Избранное")
 async def CheckFavorite(msg, state: FSMContext):
@@ -90,7 +90,7 @@ async def CheckFavorite(msg, state: FSMContext):
         text = "У вас пока нет избранных блюд"
     await msg.answer(text)
 
-@dp.message(States.nameState)
+@dp.message(States.WaitForName)
 async def FirstMsg(msg, state: FSMContext):
     await msg.answer("Выберите рецепт продукта, " + msg.text, reply_markup=GetKeyboard())
     name = msg.text
@@ -99,9 +99,9 @@ async def FirstMsg(msg, state: FSMContext):
         (msg.from_user.id, name)
     )
     conn.commit()
-    await state.set_state(States.choosingDishState)
+    await state.set_state(States.ChoosingDish)
 
-@dp.message(States.choosingDishState) 
+@dp.message(States.ChoosingDish) 
 async def Receipts(msg, state: FSMContext):
     dish = msg.text
     if (dish in recipes):
