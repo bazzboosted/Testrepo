@@ -55,7 +55,7 @@ def InitDb():
             CONSTRAINT favorites_User_FK FOREIGN KEY (tgId) REFERENCES "users"(tgId) ON DELETE SET NULL
         );
     """)
-    conn.commit() //'это взято из dbeaver полностью'
+    conn.commit() #это взято из dbeaver полностью
     
     
 def GetKeyboard():
@@ -82,10 +82,10 @@ async def FirstAnswer(msg, state: FSMContext):
 
 @dp.message(F.text == "Избранное")
 async def CheckFavorite(msg, state: FSMContext):
-    cursor.execute("SELECT dish FROM favorites WHERE tgId = ?", (msg.from_user.id,))
+    cursor.execute("SELECT dish, count FROM favorites WHERE tgId = ?", (msg.from_user.id,))
     rows = cursor.fetchall()
     if rows:
-        text = "Ваше избранное:\n" + "\n".join(row[0] for row in rows)
+        text = "Ваше избранное:\n" + "\n".join (f"{row[0]} - запрашивали {row[1]} раз" for row in rows)
     else:
         text = "У вас пока нет избранных блюд"
     await msg.answer(text)
@@ -104,17 +104,32 @@ async def FirstMsg(msg, state: FSMContext):
 @dp.message(States.ChoosingDish) 
 async def Receipts(msg, state: FSMContext):
     dish = msg.text
-    if (dish in recipes):
+    if dish in recipes:
         cursor.execute("SELECT name FROM users WHERE tgId = ?", (msg.from_user.id,))
         row = cursor.fetchone()
         name = row[0]
-        await state.update_data(current_dish=dish) 
-        inline_kb = InlineKeyboardMarkup(inline_keyboard=[
-            [
-                InlineKeyboardButton(text=" Добавить в избранное", callback_data="add"),
-                InlineKeyboardButton(text=" Нет", callback_data="skip")
-            ]
-        ])
+        await state.update_data(current_dish=dish)
+        cursor.execute(
+            "select count from favorites where tgId = ? and dish = ?",
+            (msg.from_user.id, dish)
+        )
+        existing = cursor.fetchone()
+        if existing:
+            cursor.execute(
+                "UPDATE favorites SET count = count + 1 WHERE tgId = ? AND dish = ?",
+                (msg.from_user.id, dish)
+            )
+        else:
+            cursor.execute(
+                "INSERT INTO favorites (tgId, dish, count) VALUES (?, ?, 1)",
+                (msg.from_user.id, dish)
+            )
+        conn.commit()
+
+        inline_kb = InlineKeyboardMarkup(inline_keyboard=[[
+            InlineKeyboardButton(text="Добавить в избранное", callback_data="add"),
+            InlineKeyboardButton(text="Нет", callback_data="skip")
+        ]])
         await msg.answer(recipes[dish])
         await msg.answer("Вам понравилось, " + name + "? Хотите добавить в избранное?", reply_markup=inline_kb)
     else:
